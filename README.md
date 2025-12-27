@@ -17,7 +17,7 @@
 You can install the library using npm:
 
 ```bash
-npm install ocif
+npm install ocif-js
 ```
 
 ## Usage
