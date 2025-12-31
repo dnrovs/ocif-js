@@ -9,20 +9,25 @@ const __dirname = dirname(__filename)
 
 export const GLYPH_WIDTH = 8
 export const GLYPH_HEIGHT = 16
+export const GLYPH_BYTELENGTH = 16
 
 export class Glyph {
     public readonly data: Buffer
+    public readonly byteLength: number
 
     constructor(data: Buffer) {
         this.data = data
+        this.byteLength = data.length
     }
 
     public getPixel(x: number, y: number): boolean {
-        if (x < 0 || x >= GLYPH_WIDTH || y < 0 || y >= GLYPH_HEIGHT) {
+        const isWide = this.byteLength > GLYPH_BYTELENGTH
+        const width = isWide ? GLYPH_WIDTH * 2 : GLYPH_WIDTH
+        if (x < 0 || x >= width || y < 0 || y >= GLYPH_HEIGHT) {
             return false
         }
-        const byteIndex = Math.floor((y * GLYPH_WIDTH + x) / 8)
-        const bitIndex = 7 - ((y * GLYPH_WIDTH + x) % 8)
+        const byteIndex = Math.floor((y * width + x) / 8)
+        const bitIndex = 7 - ((y * width + x) % 8)
         return ((this.data[byteIndex] >> bitIndex) & 1) === 1
     }
 }
@@ -80,7 +85,9 @@ export class HexFont {
         alpha: number
     ): PNG {
         const glyph = this.getGlyph(char) ?? this.getGlyph(' ')
-        const png = new PNG({ width: GLYPH_WIDTH, height: GLYPH_HEIGHT })
+        const isWide = glyph!.byteLength > GLYPH_BYTELENGTH
+        const width = isWide ? GLYPH_WIDTH * 2 : GLYPH_WIDTH
+        const png = new PNG({ width, height: GLYPH_HEIGHT })
 
         const fgR = (fgColor >> 16) & 0xff
         const fgG = (fgColor >> 8) & 0xff
@@ -92,8 +99,8 @@ export class HexFont {
         const bgA = Math.floor((1 - alpha) * 255)
 
         for (let y = 0; y < GLYPH_HEIGHT; y++) {
-            for (let x = 0; x < GLYPH_WIDTH; x++) {
-                const idx = (GLYPH_WIDTH * y + x) << 2
+            for (let x = 0; x < width; x++) {
+                const idx = (width * y + x) << 2
                 const isSet = glyph!.getPixel(x, y)
 
                 if (isSet) {

@@ -139,4 +139,28 @@ describe('OCIF', () => {
         expect(pixel?.alpha).toBe(1.0)
         expect(pixel?.character).toBe(' ')
     })
+
+    it('should convert an OCIF image with a wide character to PNG', () => {
+        const image = new OCIF(2, 1) // Create an image wide enough for a wide character and a regular one
+        image.setPixel(0, 0, {
+            background: 0,
+            foreground: 0xffffff,
+            alpha: 1,
+            character: '⌛' // A known wide character
+        })
+        image.setPixel(1, 0, {
+            background: 0,
+            foreground: 0xffffff,
+            alpha: 1,
+            character: 'a' // A regular character
+        })
+
+        const pngBuffer = image.toPNG()
+        expect(pngBuffer).toBeInstanceOf(Buffer)
+
+        const png = PNG.sync.read(pngBuffer)
+        // Expect width to be (GLYPH_WIDTH * 2 for '⌛') + (GLYPH_WIDTH for 'a')
+        expect(png.width).toBe(8 * 2 + 8)
+        expect(png.height).toBe(16)
+    })
 })

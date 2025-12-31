@@ -1,7 +1,7 @@
 import { Pixel } from './types'
 import { BufferReader } from './io'
 import { palette, findClosestColor } from './palette'
-import { HexFont, GLYPH_WIDTH, GLYPH_HEIGHT } from './hexfont'
+import { HexFont, GLYPH_WIDTH, GLYPH_BYTELENGTH, GLYPH_HEIGHT } from './hexfont'
 import { PNG } from 'pngjs'
 
 /**
@@ -256,17 +256,32 @@ export class OCIF {
             )
         }
 
+        const font = HexFont.getInstance()
+        let totalWidth = 0
+        for (let x = 0; x < this.width; x++) {
+            const pixel = this.getPixel(x, 0)
+            if (pixel) {
+                const glyph = font.getGlyph(pixel.character)
+                const isWide = glyph && glyph.byteLength > GLYPH_BYTELENGTH
+                totalWidth += isWide ? GLYPH_WIDTH * 2 : GLYPH_WIDTH
+            }
+        }
+
         const png = new PNG({
-            width: Math.floor(this.width * GLYPH_WIDTH * scale),
+            width: Math.floor(totalWidth * scale),
             height: Math.floor(this.height * GLYPH_HEIGHT * scale)
         })
 
-        const font = HexFont.getInstance()
-
+        let currentX = 0
         for (let y = 0; y < this.height; y++) {
-            for (let x = 0; x < this.width; x++) {
+            currentX = 0
+            let x = 0
+            while (x < this.width) {
                 const pixel = this.getPixel(x, y)
                 if (pixel) {
+                    const glyph = font.getGlyph(pixel.character)
+                    const isWide = glyph && glyph.byteLength > GLYPH_BYTELENGTH
+
                     const charPng = font.rasterize(
                         pixel.character,
                         pixel.foreground,
@@ -274,13 +289,13 @@ export class OCIF {
                         pixel.alpha
                     )
 
-                    const glyphWidthScaled = GLYPH_WIDTH * scale
+                    const glyphWidth = isWide ? GLYPH_WIDTH * 2 : GLYPH_WIDTH
                     const glyphHeightScaled = GLYPH_HEIGHT * scale
 
-                    const startX = Math.floor(x * glyphWidthScaled)
+                    const startX = Math.floor(currentX * scale)
                     const startY = Math.floor(y * glyphHeightScaled)
 
-                    const endX = Math.floor((x + 1) * glyphWidthScaled)
+                    const endX = Math.floor((currentX + glyphWidth) * scale)
                     const endY = Math.floor((y + 1) * glyphHeightScaled)
 
                     for (let py = startY; py < endY; py++) {
@@ -294,7 +309,7 @@ export class OCIF {
                                 continue
 
                             const srcX = Math.min(
-                                GLYPH_WIDTH - 1,
+                                glyphWidth - 1,
                                 Math.floor((px - startX) / scale)
                             )
                             const srcY = Math.min(
@@ -313,6 +328,14 @@ export class OCIF {
                             )
                         }
                     }
+                    currentX += glyphWidth
+                    if (isWide) {
+                        x += 2
+                    } else {
+                        x++
+                    }
+                } else {
+                    x++
                 }
             }
         }
