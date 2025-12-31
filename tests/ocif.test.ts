@@ -141,7 +141,7 @@ describe('OCIF', () => {
     })
 
     it('should convert an OCIF image with a wide character to PNG', () => {
-        const image = new OCIF(2, 1) // Create an image wide enough for a wide character and a regular one
+        const image = new OCIF(3, 1) // A wide char takes 2 cells.
         image.setPixel(0, 0, {
             background: 0,
             foreground: 0xffffff,
@@ -149,6 +149,12 @@ describe('OCIF', () => {
             character: '⌛' // A known wide character
         })
         image.setPixel(1, 0, {
+            background: 0,
+            foreground: 0,
+            alpha: 0,
+            character: '' // Placeholder for the second half of the wide char
+        })
+        image.setPixel(2, 0, {
             background: 0,
             foreground: 0xffffff,
             alpha: 1,

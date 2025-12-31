@@ -258,12 +258,21 @@ export class OCIF {
 
         const font = HexFont.getInstance()
         let totalWidth = 0
-        for (let x = 0; x < this.width; x++) {
+        let x = 0
+        while (x < this.width) {
             const pixel = this.getPixel(x, 0)
             if (pixel) {
                 const glyph = font.getGlyph(pixel.character)
                 const isWide = glyph && glyph.byteLength > GLYPH_BYTELENGTH
                 totalWidth += isWide ? GLYPH_WIDTH * 2 : GLYPH_WIDTH
+                if (isWide) {
+                    x += 2
+                } else {
+                    x++
+                }
+            } else {
+                totalWidth += GLYPH_WIDTH
+                x++
             }
         }
 
